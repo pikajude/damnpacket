@@ -3,6 +3,8 @@
 {-# LANGUAGE RankNTypes        #-}
 {-# LANGUAGE ViewPatterns      #-}
 
+-- | This module provides a datatype and convenience functions for parsing,
+-- manipulating, and rendering deviantART Message Network messages.
 module Network.Damn (
     -- *** Datatypes
     Message(..),
@@ -10,6 +12,7 @@ module Network.Damn (
     MessageBody,
     -- *** Working with message bodies
     bodyBytes, Formatter, bodyWithFormat,
+    toBody, toBodyText,
     -- *** Working with sub-messages
     subMessage,
     pattern Sub,
@@ -17,39 +20,29 @@ module Network.Damn (
     parseMessage,
     messageP,
     -- *** Rendering
-    render, toBody, toBodyText,
+    render,
     -- *** Tablumps
     Lump(..)
 ) where
 
 import           Control.Applicative
-import           Control.Arrow                    (left)
 import qualified Control.Monad
 import           Control.Monad.Fail
 import           Data.Attoparsec.ByteString       hiding (word8)
 import qualified Data.Attoparsec.ByteString       as A
 import qualified Data.Attoparsec.ByteString.Char8 as C
 import           Data.ByteString
-import qualified Data.ByteString                  as B
 import           Data.ByteString.Builder
 import qualified Data.ByteString.Lazy             as LB (toStrict)
 import           Data.Char
-import           Data.Foldable                    (fold)
 import           Data.Ix
 import           Data.Monoid
 import           Data.String
 import           Data.Text                        hiding (singleton)
-import           Data.Text.Encoding
-import           Data.Text.Internal.Builder       (toLazyText)
-import           Data.Text.Lazy                   (toStrict)
 import           Data.Word
-import           HTMLEntities.Decoder
 import           Network.Damn.Format.Base         (Formatter)
 import           Network.Damn.Tablumps
 import           Prelude                          hiding (fail)
-
-bytesToTextUtf8 :: ByteString -> Text
-bytesToTextUtf8 = toStrict . toLazyText . htmlEncodedText . decodeUtf8
 
 -- | A top-level dAmn message.
 --
@@ -98,26 +91,14 @@ data SubMessage = SubMessage
                 , subMessageBody     :: Maybe MessageBody
                 } deriving (Eq, Show)
 
-class HasBody msg where
-    getBody :: msg -> Maybe MessageBody
-
-instance HasBody Message where getBody = messageBody
-instance HasBody SubMessage where getBody = subMessageBody
-
 -- | The body of a message, which can be converted to various formats
 -- ('bodyWithFormat') or parsed as a 'SubMessage' ('subMessage').
 data MessageBody = MessageBody
-                 { bodyBytes  :: ByteString
-                 --   -- | View the textual content of a 'MessageBody'.
-                 --   --
-                 --   -- Some implementation details:
-                 --   --
-                 --   -- * HTML entities will be decoded.
-                 --   -- * Characters outside the ASCII block will be treated
-                 --   -- as ISO-8859-1 (the dAmn standard encoding).
-                 --   -- * Tablumps will be parsed (see
-                 --   -- "Network.Damn.Tablumps").
-                 -- , bodyText   :: [Either Text Lump]
+                 { -- | View the original binary content of a 'MessageBody'.
+                   --
+                   -- To interpret this as textual data, use
+                   -- 'bodyWithFormat'.
+                   bodyBytes  :: ByteString
                    -- | Try to parse a 'MessageBody' as a 'SubMessage'.
                  , subMessage :: forall m. MonadFail m => m SubMessage
                  }
@@ -153,12 +134,13 @@ instance Eq MessageBody where
 --     = True
 -- isJoinPacket _ = False
 -- @
+pattern Sub :: SubMessage -> Maybe MessageBody
 pattern Sub pkt <- ((>>= subMessage) -> Just pkt)
 
 -- | Convert a 'MessageBody' to some stringlike representation using the
--- given 'Formatter'. (See 'ircFormat').
-bodyWithFormat :: Monoid s => MessageBody -> Formatter s -> s
-bodyWithFormat (MessageBody b _) f = foldMap f . toLumps $ b
+-- given 'Formatter'. (See 'Network.Damn.Format.IRC.ircFormat').
+bodyWithFormat :: Monoid s => Formatter s -> MessageBody -> s
+bodyWithFormat f = foldMap f . toLumps . bodyBytes
 
 messageP :: Parser Message
 messageP = do
@@ -199,9 +181,9 @@ subMessageP = do
 attr :: Parser (ByteString, Text)
 attr = do
     k <- takeWhile1 nameChars
-    C.char '='
+    _ <- C.char '='
     v <- C.takeWhile (/= '\n')
-    C.char '\n'
+    _ <- C.char '\n'
     return (k, bytesToText v)
 
 nameChars :: Word8 -> Bool
@@ -217,6 +199,8 @@ toBody x = MessageBody x
 
 -- | Like 'toBody', but convert codepoints outside the ASCII range to HTML
 -- entities.
+--
+-- Note that this is NOT equivalent to @toBody . encodeUtf8@.
 toBodyText :: Text -> MessageBody
 toBodyText = toBody . textToBytes
 
@@ -244,7 +228,8 @@ render (Message name arg attrs body) = appendArg arg name
         renderBody (Just (MessageBody b _)) = "\n" <> b
         renderBody _                        = ""
 
-textToBytes = LB.toStrict . toLazyByteString . Data.Text.foldr (\ c b -> maybeEscape c <> b) ""
-maybeEscape c
-    | ord c <= 127 = word8 (fromIntegral $ ord c)
-    | otherwise = "&#" <> intDec (ord c) <> ";"
+textToBytes :: Text -> ByteString
+textToBytes = LB.toStrict . toLazyByteString . Data.Text.foldr (\ c b -> maybeEscape c <> b) "" where
+    maybeEscape c
+        | ord c <= 127 = word8 (fromIntegral $ ord c)
+        | otherwise = "&#" <> intDec (ord c) <> ";"

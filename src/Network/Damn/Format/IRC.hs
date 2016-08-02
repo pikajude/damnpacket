@@ -1,27 +1,28 @@
 {-# LANGUAGE OverloadedStrings #-}
 
+-- | Format a dAmn message body as an inline text approximation, including
+-- IRC styles.
 module Network.Damn.Format.IRC (
     Lines(..), ircFormat
 ) where
 
-import           Data.ByteString            (ByteString)
-import qualified Data.ByteString            as B
+import           Data.ByteString          (ByteString)
+import qualified Data.ByteString          as B
 import           Data.Monoid
 import           Data.String
-import qualified Data.Text                  as T
 import           Data.Text.Encoding
-import           Data.Text.Internal.Builder (toLazyText)
-import           Data.Text.Lazy             (toStrict)
-import           HTMLEntities.Decoder
 import           Network.Damn.Format.Base
-import           Network.Damn.Tablumps
 
+-- | The 'Monoid' instance for this type preserves line boundaries.
+--
+-- Invariant: none of the elements of 'unLines' can contain @0x10@.
 newtype Lines = Lines { unLines :: [ByteString] }
                 deriving Show
 
 instance IsString Lines where
     fromString = toLines . fromString
 
+toLines :: ByteString -> Lines
 toLines s = Lines (B.split 10 s)
 
 instance Monoid Lines where
@@ -30,7 +31,7 @@ instance Monoid Lines where
     x `mappend` Lines [] = x
     Lines [a] `mappend` Lines [b] = Lines [a <> b]
     Lines xs `mappend` Lines [c] = Lines (init xs ++ [last xs <> c])
-    Lines [a] `mappend` Lines (x:xs) = Lines ([a <> x] ++ xs)
+    Lines [a] `mappend` Lines (x:xs) = Lines ((a <> x) : xs)
     Lines xs `mappend` Lines ys = Lines (init xs ++ [last xs <> head ys] ++ tail ys)
 
 -- | A formatter to make an attempt at converting dAmn tablumps to IRC
@@ -46,10 +47,23 @@ instance Monoid Lines where
 ircFormat :: Formatter Lines
 ircFormat = either (toLines . encodeUtf8 . htmlDecode) (toLines . ircFormat')
 
+ircFormat' :: Lump -> ByteString
+ircFormat' B                   = "\x02"
 ircFormat' Br                  = "\n"
-ircFormat' SlashAbbr           = "</abbr>"
+ircFormat' I                   = "\x1D"
+ircFormat' U                   = "\x1F"
+
+ircFormat' CloseAbbr           = "</abbr>"
+ircFormat' CloseB              = "\x02"
+ircFormat' CloseI              = "\x1D"
+ircFormat' CloseU              = "\x1F"
+
 ircFormat' (Abbr x)            = "<abbr title=\"" <> x <> "\">"
+
 ircFormat' (Dev x y)           = x <> y
+
 ircFormat' (Emote x _ _ _ _)   = x
+
 ircFormat' (Thumb x _ _ _ _ _) = ":thumb" <> x <> ":"
+
 ircFormat' (Link x _)          = x

@@ -1,3 +1,4 @@
+{-# OPTIONS_GHC -fno-warn-orphans #-}
 {-# LANGUAGE DeriveLift      #-}
 {-# LANGUAGE TemplateHaskell #-}
 
@@ -10,26 +11,38 @@ import           Language.Haskell.TH.Syntax
 
 ary :: Int -> String -> Name -> ExpQ
 ary n s con = [e|do
-    string s
-    C.char '\t'
-    Right <$> $(mkApps n con)
+    _ <- string s
+    _ <- C.char '\t'
+    Right <$> $(mkApps)
     |]
+    where
+        mkApps = foldl (\ a b -> [e|$(a) <*> $(b)|]) [e|pure $(conE con)|]
+            $ replicate n [e|C.takeWhile (/= '\t') <* C.char '\t'|]
 
-mkApps n con = foldl (\ a b -> [e|$(a) <*> $(b)|]) [e|pure $(conE con)|]
-    $ replicate n [e|C.takeWhile (/= '\t') <* C.char '\t'|]
+-- | Tokens representing tablumps.
+--
+-- These constructors are defined first in order of arity, then
+-- alphabetically.
+data Lump = B -- ^ @\<b\>@
+          | Br -- ^ @\<br/\>@
+          | I -- ^ @\<i\>@
+          | U -- ^ @\<u\>@
 
-data Lump = Br
-          | SlashAbbr
+          | CloseAbbr -- ^ @\</abbr\>@
+          | CloseB -- ^ @\</b\>@
+          | CloseI -- ^ @\</i\>@
+          | CloseU -- ^ @\</u\>@
 
-          | Abbr ByteString
+          | Abbr ByteString -- ^ @\<abbr title="$1"\>@
 
-          | Dev ByteString ByteString
+          | Dev ByteString ByteString -- ^ @$1\<a href="$2.deviantart.com"\>$2\</a\>@
 
-          | Emote ByteString ByteString ByteString ByteString ByteString
+          | -- | @\<img alt="$1" width="$2" height="$3" title="$4" src="http://e.deviantart.com/emoticons/$5" /\>@
+            Emote ByteString ByteString ByteString ByteString ByteString
 
-          | Thumb ByteString ByteString ByteString ByteString ByteString ByteString
+          | Thumb ByteString ByteString ByteString ByteString ByteString ByteString -- ^ @:thumb$1:@
 
-          | Link ByteString (Maybe ByteString)
+          | Link ByteString (Maybe ByteString) -- ^ @\<a href="$1" title="$1"\>$2 or "[link]"\</a\>@
           deriving (Lift, Eq, Show)
 
 instance Lift ByteString where
