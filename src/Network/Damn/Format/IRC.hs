@@ -1,69 +1,41 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE OverloadedStrings          #-}
 
 -- | Format a dAmn message body as an inline text approximation, including
 -- IRC styles.
 module Network.Damn.Format.IRC (
-    Lines(..), ircFormat
+    ircFormat, Lines, unLines
 ) where
 
-import           Data.ByteString          (ByteString)
-import qualified Data.ByteString          as B
-import           Data.Monoid
+import           Data.ByteString                   (ByteString)
+import qualified Data.ByteString                   as B
 import           Data.String
 import           Data.Text.Encoding
 import           Network.Damn.Format.Base
+import           Network.Damn.Format.Damn.Internal
 
--- | The 'Monoid' instance for this type preserves line boundaries.
---
--- Invariant: none of the elements of 'unLines' can contain @0x10@.
-newtype Lines = Lines { unLines :: [ByteString] }
-                deriving Show
+newtype Lines = Lines ByteString deriving (Show, Monoid, IsString)
 
-instance IsString Lines where
-    fromString = toLines . fromString
+unLines :: Lines -> [ByteString]
+unLines (Lines bs) = B.split 10 bs
 
-toLines :: ByteString -> Lines
-toLines s = Lines (B.split 10 s)
-
-instance Monoid Lines where
-    mempty = Lines []
-    Lines [] `mappend` x = x
-    x `mappend` Lines [] = x
-    Lines [a] `mappend` Lines [b] = Lines [a <> b]
-    Lines xs `mappend` Lines [c] = Lines (init xs ++ [last xs <> c])
-    Lines [a] `mappend` Lines (x:xs) = Lines ((a <> x) : xs)
-    Lines xs `mappend` Lines ys = Lines (init xs ++ [last xs <> head ys] ++ tail ys)
-
--- | A formatter to make an attempt at converting dAmn tablumps to IRC
--- formatting. This formatter will convert basic styling (bold, italics,
--- etc.) to mIRC colors, convert thumbs and emoticons to their textual
--- representation as they would appear on dAmn, and otherwise converts to
--- HTML tags to preserve data.
+-- | This formatter functions as 'Network.Damn.Format.Damn.damnFormat',
+-- except that bold, italics, and underlines will be converted to mIRC
+-- colors.
 --
 -- Additionally, @Text@ will be encoded as UTF-8.
 --
 -- Note that this formatter will generate 'Lines', as newlines (to which
 -- @&br\\t@ translates) cannot appear in IRC messages.
 ircFormat :: Formatter Lines
-ircFormat = either (toLines . encodeUtf8 . htmlDecode) (toLines . ircFormat')
+ircFormat = either (Lines . encodeUtf8) (Lines . ircFormat')
 
 ircFormat' :: Lump -> ByteString
-ircFormat' B                   = "\x02"
-ircFormat' Br                  = "\n"
-ircFormat' I                   = "\x1D"
-ircFormat' U                   = "\x1F"
-
-ircFormat' CloseAbbr           = "</abbr>"
-ircFormat' CloseB              = "\x02"
-ircFormat' CloseI              = "\x1D"
-ircFormat' CloseU              = "\x1F"
-
-ircFormat' (Abbr x)            = "<abbr title=\"" <> x <> "\">"
-
-ircFormat' (Dev x y)           = x <> y
-
-ircFormat' (Emote x _ _ _ _)   = x
-
-ircFormat' (Thumb x _ _ _ _ _) = ":thumb" <> x <> ":"
-
-ircFormat' (Link x _)          = x
+ircFormat' B   = "\x02"
+ircFormat' C_B = "\x02"
+ircFormat' Br  = "\n"
+ircFormat' I   = "\x1D"
+ircFormat' C_I = "\x1D"
+ircFormat' U   = "\x1F"
+ircFormat' C_U = "\x1F"
+ircFormat' x   = damnFormat' x

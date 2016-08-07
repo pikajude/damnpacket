@@ -15,7 +15,7 @@ module Network.Damn (
     toBody, toBodyText,
     -- *** Working with sub-messages
     subMessage,
-    pattern Sub,
+    pattern SubM,
     -- *** Parsing
     parseMessage,
     messageP,
@@ -28,21 +28,20 @@ module Network.Damn (
 import           Control.Applicative
 import qualified Control.Monad
 import           Control.Monad.Fail
-import           Data.Attoparsec.ByteString       hiding (word8)
-import qualified Data.Attoparsec.ByteString       as A
-import qualified Data.Attoparsec.ByteString.Char8 as C
+import           Data.Attoparsec.ByteString        hiding (word8)
+import qualified Data.Attoparsec.ByteString        as A
+import qualified Data.Attoparsec.ByteString.Char8  as C
 import           Data.ByteString
-import           Data.ByteString.Builder
-import qualified Data.ByteString.Lazy             as LB (toStrict)
 import           Data.Char
 import           Data.Ix
 import           Data.Monoid
 import           Data.String
-import           Data.Text                        hiding (singleton)
+import           Data.Text                         hiding (singleton)
 import           Data.Word
-import           Network.Damn.Format.Base         (Formatter)
+import           Network.Damn.Format.Base          (Formatter)
+import           Network.Damn.Format.Damn.Internal (textToBytes)
 import           Network.Damn.Tablumps
-import           Prelude                          hiding (fail)
+import           Prelude                           hiding (fail)
 
 -- | A top-level dAmn message.
 --
@@ -64,17 +63,15 @@ import           Prelude                          hiding (fail)
 -- message body can either be treated as text or as a 'SubMessage' (see
 -- 'MessageBody').
 --
--- In addition, HTML entity decoding is applied to all 'Text' fields of
--- a 'Message', meaning that the following message:
+-- Note that dAmn is a primarily browser-based platform; it deals with
+-- only ISO-8859-1 output and input and inserts chat messages directly into
+-- the DOM. As a consequence, correctly displaying characters past the ASCII
+-- block requires the use of HTML entities.
 --
--- @
--- user pikajude
--- realname=\&\#9398;\&\#9773;
--- @
---
--- will have the attributes @[("realname","Ⓐ☭")]@.
---
--- The reverse is also true (see 'render').
+-- All functions in this module transparently convert HTML entities
+-- embedded in 'ByteString's to 'Text' (and back; see 'toBodyText'). Thus,
+-- when 'Text' appears in fields of this record or of 'SubMessage', you can
+-- assume that the HTML entity decoding step has already been handled.
 data Message = Message
              { messageName     :: ByteString
              , messageArgument :: Maybe ByteString
@@ -134,11 +131,11 @@ instance Eq MessageBody where
 --     = True
 -- isJoinPacket _ = False
 -- @
-pattern Sub :: SubMessage -> Maybe MessageBody
-pattern Sub pkt <- ((>>= subMessage) -> Just pkt)
+pattern SubM :: SubMessage -> Maybe MessageBody
+pattern SubM pkt <- ((>>= subMessage) -> Just pkt)
 
 -- | Convert a 'MessageBody' to some stringlike representation using the
--- given 'Formatter'. (See 'Network.Damn.Format.IRC.ircFormat').
+-- given 'Formatter'. (See 'Network.Damn.Format.Damn.damnFormat').
 bodyWithFormat :: Monoid s => Formatter s -> MessageBody -> s
 bodyWithFormat f = foldMap f . toLumps . bodyBytes
 
@@ -227,9 +224,3 @@ render (Message name arg attrs body) = appendArg arg name
         renderAttrs ((a,b):bs) = a <> "=" <> textToBytes b <> "\n" <> renderAttrs bs
         renderBody (Just (MessageBody b _)) = "\n" <> b
         renderBody _                        = ""
-
-textToBytes :: Text -> ByteString
-textToBytes = LB.toStrict . toLazyByteString . Data.Text.foldr (\ c b -> maybeEscape c <> b) "" where
-    maybeEscape c
-        | ord c <= 127 = word8 (fromIntegral $ ord c)
-        | otherwise = "&#" <> intDec (ord c) <> ";"

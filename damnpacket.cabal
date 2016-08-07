@@ -18,9 +18,11 @@ cabal-version:       >=1.10
 library
   exposed-modules:     Network.Damn
                        Network.Damn.Format.IRC
+                       Network.Damn.Format.Damn
   other-modules:       Network.Damn.Tablumps
                        Network.Damn.Tablumps.TH
                        Network.Damn.Format.Base
+                       Network.Damn.Format.Damn.Internal
   -- other-extensions:    
   build-depends:       base == 4.*
                      , attoparsec

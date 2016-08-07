@@ -1,6 +1,9 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
+{-# LANGUAGE CPP             #-}
 {-# LANGUAGE DeriveLift      #-}
 {-# LANGUAGE TemplateHaskell #-}
+
+#define ARG ByteString
 
 module Network.Damn.Tablumps.TH where
 
@@ -23,26 +26,47 @@ ary n s con = [e|do
 --
 -- These constructors are defined first in order of arity, then
 -- alphabetically.
-data Lump = B -- ^ @\<b\>@
-          | Br -- ^ @\<br/\>@
-          | I -- ^ @\<i\>@
-          | U -- ^ @\<u\>@
-
-          | CloseAbbr -- ^ @\</abbr\>@
-          | CloseB -- ^ @\</b\>@
-          | CloseI -- ^ @\</i\>@
-          | CloseU -- ^ @\</u\>@
-
-          | Abbr ByteString -- ^ @\<abbr title="$1"\>@
-
-          | Dev ByteString ByteString -- ^ @$1\<a href="$2.deviantart.com"\>$2\</a\>@
-
-          | -- | @\<img alt="$1" width="$2" height="$3" title="$4" src="http://e.deviantart.com/emoticons/$5" /\>@
-            Emote ByteString ByteString ByteString ByteString ByteString
-
-          | Thumb ByteString ByteString ByteString ByteString ByteString ByteString -- ^ @:thumb$1:@
-
-          | Link ByteString (Maybe ByteString) -- ^ @\<a href="$1" title="$1"\>$2 or "[link]"\</a\>@
+data Lump = A ARG ARG
+          | C_A
+          | Abbr ARG
+          | C_Abbr
+          | Acro ARG
+          | C_Acro
+          | Avatar ARG ARG
+          | B
+          | C_B
+          | Bcode
+          | C_Bcode
+          | Br
+          | Code
+          | C_Code
+          | Dev ARG ARG
+          | Embed ARG ARG ARG
+          | C_Embed
+          | Emote ARG ARG ARG ARG ARG
+          | I
+          | C_I
+          | Iframe ARG ARG ARG
+          | C_Iframe
+          | Img ARG ARG ARG
+          | Li
+          | C_Li
+          | Link ARG (Maybe ARG)
+          | Ol
+          | C_Ol
+          | P
+          | C_P
+          | S
+          | C_S
+          | Sub
+          | C_Sub
+          | Sup
+          | C_Sup
+          | Thumb ARG ARG ARG ARG ARG ARG
+          | U
+          | C_U
+          | Ul
+          | C_Ul
           deriving (Lift, Eq, Show)
 
 instance Lift ByteString where
