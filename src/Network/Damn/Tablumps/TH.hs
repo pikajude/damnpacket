@@ -1,16 +1,17 @@
-{-# OPTIONS_GHC -fno-warn-orphans #-}
 {-# LANGUAGE CPP             #-}
-{-# LANGUAGE DeriveLift      #-}
 {-# LANGUAGE TemplateHaskell #-}
 
 #define ARG ByteString
 
 module Network.Damn.Tablumps.TH where
 
+import           Data.Attoparsec.ByteString       (string)
 import qualified Data.Attoparsec.ByteString.Char8 as C
-import           Data.ByteString                  (ByteString, unpack)
+import           Data.ByteString                  (ByteString)
 import           Language.Haskell.TH
-import           Language.Haskell.TH.Syntax
+#if __GLASGOW_HASKELL__ <= 708
+import           Control.Applicative
+#endif
 
 ary :: Int -> String -> Name -> ExpQ
 ary n s con = [e|do
@@ -67,8 +68,6 @@ data Lump = A ARG ARG
           | C_U
           | Ul
           | C_Ul
-          deriving (Lift, Eq, Show)
+          deriving (Eq, Show)
 
-instance Lift ByteString where
-    lift b = [e|pack ws|]
-        where ws = unpack b
+{-# ANN module ("HLint: ignore Use camelCase" :: String) #-}

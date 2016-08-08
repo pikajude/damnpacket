@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP                        #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE OverloadedStrings          #-}
 
@@ -13,6 +14,9 @@ import           Data.String
 import           Data.Text.Encoding
 import           Network.Damn.Format.Base
 import           Network.Damn.Format.Damn.Internal
+#if __GLASGOW_HASKELL__ <= 708
+import           Data.Monoid
+#endif
 
 newtype Lines = Lines ByteString deriving (Show, Monoid, IsString)
 

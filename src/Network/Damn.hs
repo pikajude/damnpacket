@@ -1,7 +1,13 @@
+{-# LANGUAGE CPP               #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PatternSynonyms   #-}
 {-# LANGUAGE RankNTypes        #-}
+
+#define PATTERNS (__GLASGOW_HASKELL__ >= 710)
+
+#if PATTERNS
 {-# LANGUAGE ViewPatterns      #-}
+#endif
 
 -- | This module provides a datatype and convenience functions for parsing,
 -- manipulating, and rendering deviantART Message Network messages.
@@ -15,7 +21,9 @@ module Network.Damn (
     toBody, toBodyText,
     -- *** Working with sub-messages
     subMessage,
+#if PATTERNS
     pattern SubM,
+#endif
     -- *** Parsing
     parseMessage,
     messageP,
@@ -42,6 +50,9 @@ import           Network.Damn.Format.Base          (Formatter)
 import           Network.Damn.Format.Damn.Internal (textToBytes)
 import           Network.Damn.Tablumps
 import           Prelude                           hiding (fail)
+#if __GLASGOW_HASKELL__ <= 708
+import           Data.Foldable                     (foldMap)
+#endif
 
 -- | A top-level dAmn message.
 --
@@ -113,6 +124,7 @@ instance Show MessageBody where
 instance Eq MessageBody where
     MessageBody b _ == MessageBody b1 _ = b == b1
 
+#if PATTERNS
 -- | 'subMessage' as a pattern.
 --
 -- @
@@ -133,6 +145,7 @@ instance Eq MessageBody where
 -- @
 pattern SubM :: SubMessage -> Maybe MessageBody
 pattern SubM pkt <- ((>>= subMessage) -> Just pkt)
+#endif
 
 -- | Convert a 'MessageBody' to some stringlike representation using the
 -- given 'Formatter'. (See 'Network.Damn.Format.Damn.damnFormat').

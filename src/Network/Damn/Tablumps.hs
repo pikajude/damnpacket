@@ -1,4 +1,3 @@
-{-# OPTIONS_GHC -ddump-splices #-}
 {-# LANGUAGE NoMonomorphismRestriction #-}
 {-# LANGUAGE OverloadedStrings         #-}
 {-# LANGUAGE TemplateHaskell           #-}
@@ -25,7 +24,7 @@ import           Network.Damn.Tablumps.TH
 -- data Lump = Lump deriving (Eq, Show)
 
 tablumpP :: Parser [Either ByteString Lump]
-tablumpP = many $ (Left <$> (C.takeWhile1 (/= '&')))
+tablumpP = many $ (Left <$> C.takeWhile1 (/= '&'))
        <|> lump
        <|> fmap Left (C.string "&")
 
@@ -97,10 +96,6 @@ lump = (C.char '&' *>) $ choice
      , $(ary 0 "/ul" 'C_Ul)
      ]
     where
-        -- ary n s = do
-        --     string s
-        --     C.char '\t'
-        --     fmap (Right . (,) s) $ count n arg
         link = do
             _ <- string "link"
             _ <- C.char '\t'
