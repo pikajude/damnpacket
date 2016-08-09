@@ -194,7 +194,7 @@ attr = do
     _ <- C.char '='
     v <- C.takeWhile (/= '\n')
     _ <- C.char '\n'
-    return (k, bytesToText v)
+    return (k, htmlDecode $ bytesToText v)
 
 nameChars :: Word8 -> Bool
 nameChars x = inRange (integralOrd 'a', integralOrd 'z') x
