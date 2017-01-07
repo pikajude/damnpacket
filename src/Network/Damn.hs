@@ -40,6 +40,7 @@ import           Data.Attoparsec.ByteString        hiding (word8)
 import qualified Data.Attoparsec.ByteString        as A
 import qualified Data.Attoparsec.ByteString.Char8  as C
 import           Data.ByteString
+import qualified Data.ByteString as B
 import           Data.Char
 import           Data.Ix
 import           Data.Monoid
@@ -150,7 +151,13 @@ pattern SubM pkt <- ((>>= subMessage) -> Just pkt)
 -- | Convert a 'MessageBody' to some stringlike representation using the
 -- given 'Formatter'. (See 'Network.Damn.Format.Damn.damnFormat').
 bodyWithFormat :: Monoid s => Formatter s -> MessageBody -> s
-bodyWithFormat f = foldMap f . toLumps . bodyBytes
+bodyWithFormat f = foldMap f . dropColorAbbrs . toLumps . bodyBytes where
+    -- these are annoying and nobody needs them
+    dropColorAbbrs (Right (Abbr c) : Right C_Abbr : xs)
+        | "colors:" `B.isPrefixOf` c = xs
+        | otherwise = Right (Abbr c) : dropColorAbbrs (Right C_Abbr : xs)
+    dropColorAbbrs (x:xs) = x : dropColorAbbrs xs
+    dropColorAbbrs [] = []
 
 messageP :: Parser Message
 messageP = do
