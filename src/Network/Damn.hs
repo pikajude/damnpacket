@@ -100,11 +100,11 @@ data SubMessage = SubMessage
 -- | The body of a message, which can be converted to various formats
 -- ('bodyWithFormat') or parsed as a 'SubMessage' ('subMessage').
 data MessageBody = MessageBody
-    -- | View the original binary content of a 'MessageBody'.
-    --
-    -- To interpret this as textual data, use
-    -- 'bodyWithFormat'.
-    { bodyBytes :: ByteString
+    { -- | View the original binary content of a 'MessageBody'.
+      --
+      -- To interpret this as textual data, use
+      -- 'bodyWithFormat'.
+      bodyBytes :: ByteString
     -- | Try to parse a 'MessageBody' as a 'SubMessage'.
     , subMessage :: forall m. Monad m =>
                                   m SubMessage
