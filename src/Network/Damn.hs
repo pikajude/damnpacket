@@ -1,59 +1,56 @@
-{-# LANGUAGE CPP               #-}
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE PatternSynonyms   #-}
-{-# LANGUAGE RankNTypes        #-}
+{-# LANGUAGE PatternSynonyms #-}
+{-# LANGUAGE RankNTypes #-}
 
 #define PATTERNS (__GLASGOW_HASKELL__ >= 710)
 
 #if PATTERNS
-{-# LANGUAGE ViewPatterns      #-}
+{-# LANGUAGE ViewPatterns #-}
 #endif
 
 -- | This module provides a datatype and convenience functions for parsing,
 -- manipulating, and rendering deviantART Message Network messages.
-module Network.Damn (
-    -- *** Datatypes
-    Message(..),
-    SubMessage(..),
-    MessageBody,
+module Network.Damn
+    ( -- *** Datatypes
+      Message(..)
+    , SubMessage(..)
+    , MessageBody
     -- *** Working with message bodies
-    bodyBytes, Formatter, bodyWithFormat,
-    toBody, toBodyText,
+    , bodyBytes
+    , Formatter
+    , bodyWithFormat
+    , toBody
+    , toBodyText
     -- *** Working with sub-messages
-    subMessage,
+    , subMessage
 #if PATTERNS
-    pattern SubM,
+    , pattern SubM
 #endif
     -- *** Parsing
-    parseMessage,
-    messageP,
+    , parseMessage
+    , messageP
     -- *** Rendering
-    render,
+    , render
     -- *** Tablumps
-    Lump(..)
-) where
+    , Lump(..)
+    ) where
 
-import           Control.Applicative
-import qualified Control.Monad
-import           Control.Monad.Fail
-import           Data.Attoparsec.ByteString        hiding (word8)
-import qualified Data.Attoparsec.ByteString        as A
-import qualified Data.Attoparsec.ByteString.Char8  as C
-import           Data.ByteString
+import Control.Applicative
+import Data.Attoparsec.ByteString hiding (word8)
+import qualified Data.Attoparsec.ByteString as A
+import qualified Data.Attoparsec.ByteString.Char8 as C
+import Data.ByteString
 import qualified Data.ByteString as B
-import           Data.Char
-import           Data.Ix
-import           Data.Monoid
-import           Data.String
-import           Data.Text                         hiding (singleton)
-import           Data.Word
-import           Network.Damn.Format.Base          (Formatter)
-import           Network.Damn.Format.Damn.Internal (textToBytes)
-import           Network.Damn.Tablumps
-import           Prelude                           hiding (fail)
-#if __GLASGOW_HASKELL__ <= 708
-import           Data.Foldable                     (foldMap)
-#endif
+import Data.Char
+import Data.Ix
+import Data.String
+import Data.Text hiding (singleton)
+import Data.Word
+import Network.Damn.Format.Base (Formatter)
+import Network.Damn.Format.Damn.Internal (textToBytes)
+import Network.Damn.Tablumps
+import Prelude.Compat
 
 -- | A top-level dAmn message.
 --
@@ -85,32 +82,33 @@ import           Data.Foldable                     (foldMap)
 -- when 'Text' appears in fields of this record or of 'SubMessage', you can
 -- assume that the HTML entity decoding step has already been handled.
 data Message = Message
-             { messageName     :: ByteString
-             , messageArgument :: Maybe ByteString
-             , messageAttrs    :: [(ByteString, Text)]
-             , messageBody     :: Maybe MessageBody
-             } deriving (Eq, Show)
+    { messageName :: ByteString
+    , messageArgument :: Maybe ByteString
+    , messageAttrs :: [(ByteString, Text)]
+    , messageBody :: Maybe MessageBody
+    } deriving (Eq, Show)
 
 -- | A second-level dAmn message. Note that this message can omit the
 -- name/argument pair.
 data SubMessage = SubMessage
-                { subMessageName     :: Maybe ByteString
-                , subMessageArgument :: Maybe ByteString
-                , subMessageAttrs    :: [(ByteString, Text)]
-                , subMessageBody     :: Maybe MessageBody
-                } deriving (Eq, Show)
+    { subMessageName :: Maybe ByteString
+    , subMessageArgument :: Maybe ByteString
+    , subMessageAttrs :: [(ByteString, Text)]
+    , subMessageBody :: Maybe MessageBody
+    } deriving (Eq, Show)
 
 -- | The body of a message, which can be converted to various formats
 -- ('bodyWithFormat') or parsed as a 'SubMessage' ('subMessage').
 data MessageBody = MessageBody
-                 { -- | View the original binary content of a 'MessageBody'.
-                   --
-                   -- To interpret this as textual data, use
-                   -- 'bodyWithFormat'.
-                   bodyBytes  :: ByteString
-                   -- | Try to parse a 'MessageBody' as a 'SubMessage'.
-                 , subMessage :: forall m. MonadFail m => m SubMessage
-                 }
+    -- | View the original binary content of a 'MessageBody'.
+    --
+    -- To interpret this as textual data, use
+    -- 'bodyWithFormat'.
+    { bodyBytes :: ByteString
+    -- | Try to parse a 'MessageBody' as a 'SubMessage'.
+    , subMessage :: forall m. Monad m =>
+                                  m SubMessage
+    }
 
 instance IsString MessageBody where
     fromString = toBody . fromString
@@ -118,7 +116,6 @@ instance IsString MessageBody where
 -- bodyRaw (MessageBody b _) = show b
 -- bodyText (MessageBody b _) = lumpsToText b
 -- bodyTextInline (MessageBody b _) = lumpsToTextInline b
-
 instance Show MessageBody where
     show (MessageBody b _) = show b
 
@@ -151,9 +148,10 @@ pattern SubM pkt <- ((>>= subMessage) -> Just pkt)
 -- | Convert a 'MessageBody' to some stringlike representation using the
 -- given 'Formatter'. (See 'Network.Damn.Format.Damn.damnFormat').
 bodyWithFormat :: Monoid s => Formatter s -> MessageBody -> s
-bodyWithFormat f = foldMap f . dropColorAbbrs . toLumps . bodyBytes where
+bodyWithFormat f = foldMap f . dropColorAbbrs . toLumps . bodyBytes
     -- these are annoying and nobody needs them
-    dropColorAbbrs (Right (Abbr c) : Right C_Abbr : xs)
+  where
+    dropColorAbbrs (Right (Abbr c):Right C_Abbr:xs)
         | "colors:" `B.isPrefixOf` c = xs
         | otherwise = Right (Abbr c) : dropColorAbbrs (Right C_Abbr : xs)
     dropColorAbbrs (x:xs) = x : dropColorAbbrs xs
@@ -163,25 +161,22 @@ messageP :: Parser Message
 messageP = do
     name <- C.takeWhile1 C.isAlpha_iso8859_15
     next <- C.peekChar'
-    arg <- if next == ' '
-               then C.char ' ' *> (Just <$> C.takeWhile1 (/= '\n'))
-               else pure Nothing
-
+    arg <-
+        if next == ' '
+            then C.char ' ' *> (Just <$> C.takeWhile1 (/= '\n'))
+            else pure Nothing
     _ <- C.char '\n'
     attrs <- many attr
-
     body <- parseBody
-
     return $ Message name arg attrs body
 
 parseBody :: Parser (Maybe MessageBody)
 parseBody = do
     next <- C.anyChar
     case next of
-        '\n' -> Just . toBody
-            <$> Data.Attoparsec.ByteString.takeWhile (/= 0) <* A.word8 0
+        '\n' -> Just . toBody <$> Data.Attoparsec.ByteString.takeWhile (/= 0) <* A.word8 0
         '\0' -> pure Nothing
-        _    -> Control.Monad.fail "Malformed packet"
+        _ -> fail "Malformed packet"
 
 subMessageP :: Parser SubMessage
 subMessageP = do
@@ -190,7 +185,7 @@ subMessageP = do
         Just a -> do
             otherAttrs <- many attr
             body <- parseBody
-            return $ SubMessage Nothing Nothing (a:otherAttrs) body
+            return $ SubMessage Nothing Nothing (a : otherAttrs) body
         Nothing -> do
             Message a b c d <- messageP
             return $ SubMessage (Just a) b c d
@@ -204,15 +199,16 @@ attr = do
     return (k, htmlDecode $ bytesToText v)
 
 nameChars :: Word8 -> Bool
-nameChars x = inRange (integralOrd 'a', integralOrd 'z') x
-           || inRange (integralOrd 'A', integralOrd 'Z') x
-           || inRange (integralOrd '0', integralOrd '9') x
-    where integralOrd = fromIntegral . ord
+nameChars x =
+    inRange (integralOrd 'a', integralOrd 'z') x ||
+    inRange (integralOrd 'A', integralOrd 'Z') x ||
+    inRange (integralOrd '0', integralOrd '9') x
+  where
+    integralOrd = fromIntegral . ord
 
 -- | 'MessageBody' smart constructor.
 toBody :: ByteString -> MessageBody
-toBody x = MessageBody x
-    (either Control.Monad.fail return $ parseOnly subMessageP (x <> "\0"))
+toBody x = MessageBody x (either fail return $ parseOnly subMessageP (x <> "\0"))
 
 -- | Like 'toBody', but convert codepoints outside the ASCII range to HTML
 -- entities.
@@ -232,15 +228,12 @@ parseMessage = parseOnly messageP
 -- >>> render (Message "foo" (Just "bar") [("attr1", "☭")] Nothing)
 -- "foo bar\nattr1=&#9773;\n\NUL"
 render :: Message -> ByteString
-render (Message name arg attrs body) = appendArg arg name
-    <> "\n"
-    <> renderAttrs attrs
-    <> renderBody body
-    <> "\0"
-    where
-        appendArg (Just b) = (<> (" " <> b))
-        appendArg _        = id
-        renderAttrs []         = ""
-        renderAttrs ((a,b):bs) = a <> "=" <> textToBytes b <> "\n" <> renderAttrs bs
-        renderBody (Just (MessageBody b _)) = "\n" <> b
-        renderBody _                        = ""
+render (Message name arg attrs body) =
+    appendArg arg name <> "\n" <> renderAttrs attrs <> renderBody body <> "\0"
+  where
+    appendArg (Just b) = (<> (" " <> b))
+    appendArg _ = id
+    renderAttrs [] = ""
+    renderAttrs ((a, b):bs) = a <> "=" <> textToBytes b <> "\n" <> renderAttrs bs
+    renderBody (Just (MessageBody b _)) = "\n" <> b
+    renderBody _ = ""

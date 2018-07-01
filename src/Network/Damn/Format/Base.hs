@@ -1,9 +1,10 @@
-module Network.Damn.Format.Base (
-    module Network.Damn.Format.Base,
-    module Network.Damn.Tablumps,
-    Text
-) where
+module Network.Damn.Format.Base
+    ( module Network.Damn.Format.Base
+    , module Network.Damn.Tablumps
+    , Text
+    ) where
 
+import Data.Either
 import Data.Text
 import Network.Damn.Tablumps
 
