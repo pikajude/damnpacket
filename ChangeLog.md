@@ -1,5 +1,5 @@
-# Revision history for damn
+# Revision history for damnpacket
 
-## 0.1.0.0  -- YYYY-mm-dd
+## 1.2.0
 
-* First version. Released on an unsuspecting world.
+* Minor rewrite using base-compat instead of CPP
