@@ -1,5 +1,5 @@
 name:               damnpacket
-version:            1.1.0
+version:            1.2.0
 synopsis:           Parsing dAmn messages
 description:        This module provides a datatype and convenience functions for parsing,
                     manipulating, and rendering deviantART Message Network messages.
