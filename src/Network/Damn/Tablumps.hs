@@ -16,11 +16,9 @@ import Data.Either.Compat
 import Data.Monoid.Compat
 import Data.Text (Text)
 import Data.Text.Encoding
-import Data.Text.Internal.Builder (toLazyText)
-import Data.Text.Lazy (toStrict)
-import HTMLEntities.Decoder
 import Network.Damn.Tablumps.TH
 import Prelude.Compat
+import qualified Text.HTMLEntity as HE
 
 tablumpP :: Parser [Either ByteString Lump]
 tablumpP = many $ (Left <$> C.takeWhile1 (/= '&')) <|> lump <|> fmap Left (C.string "&")
@@ -98,4 +96,4 @@ bytesToText :: ByteString -> Text
 bytesToText = decodeLatin1
 
 htmlDecode :: Text -> Text
-htmlDecode = toStrict . toLazyText . htmlEncodedText
+htmlDecode = HE.decode'
