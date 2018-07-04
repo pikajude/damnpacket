@@ -44,6 +44,7 @@ import Data.ByteString
 import qualified Data.ByteString as B
 import Data.Char
 import Data.Ix
+import Data.Semigroup
 import Data.String
 import Data.Text hiding (singleton)
 import Data.Word

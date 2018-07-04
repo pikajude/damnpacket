@@ -26,9 +26,9 @@ library
                       Network.Damn.Tablumps
                       Network.Damn.Tablumps.TH
   hs-source-dirs:     src
-  build-depends:      base                  == 4.*
+  build-depends:      base              == 4.*
                     , attoparsec
-                    , base-compat-batteries == 0.10.*
+                    , base-compat
                     , bytestring
                     , fail
                     , html-entity

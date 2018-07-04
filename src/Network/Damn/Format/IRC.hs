@@ -11,7 +11,7 @@ module Network.Damn.Format.IRC
 
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as B
-import Data.Semigroup.Compat
+import Data.Semigroup
 import Data.String
 import Data.Text.Encoding
 import Network.Damn.Format.Base
