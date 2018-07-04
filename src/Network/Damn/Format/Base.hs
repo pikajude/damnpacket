@@ -4,7 +4,6 @@ module Network.Damn.Format.Base
     , Text
     ) where
 
-import Data.Either
 import Data.Text
 import Network.Damn.Tablumps
 

@@ -9,11 +9,10 @@ import Data.ByteString (ByteString)
 import Data.ByteString.Builder
 import qualified Data.ByteString.Lazy as LB (toStrict)
 import Data.Char
-import Data.Monoid.Compat
+import Data.Monoid
 import Data.Text (Text)
 import qualified Data.Text
 import Network.Damn.Tablumps.TH
-import Prelude.Compat
 
 textToBytes :: Text -> ByteString
 textToBytes =

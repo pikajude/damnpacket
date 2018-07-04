@@ -12,12 +12,10 @@ import Control.Arrow
 import Data.Attoparsec.ByteString hiding (word8)
 import qualified Data.Attoparsec.ByteString.Char8 as C
 import Data.ByteString (ByteString)
-import Data.Either.Compat
-import Data.Monoid.Compat
+import Data.Monoid
 import Data.Text (Text)
 import Data.Text.Encoding
 import Network.Damn.Tablumps.TH
-import Prelude.Compat
 import qualified Text.HTMLEntity as HE
 
 tablumpP :: Parser [Either ByteString Lump]

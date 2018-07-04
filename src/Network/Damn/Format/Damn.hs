@@ -9,7 +9,6 @@ import Data.ByteString (ByteString)
 import Data.Text.Encoding
 import Network.Damn.Format.Base
 import Network.Damn.Format.Damn.Internal
-import Prelude.Compat
 
 -- | @damnFormat@ transforms a raw dAmn message into the text that the
 -- sender typed into the dAmn web client.

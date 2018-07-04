@@ -51,7 +51,6 @@ import Data.Word
 import Network.Damn.Format.Base (Formatter)
 import Network.Damn.Format.Damn.Internal (textToBytes)
 import Network.Damn.Tablumps
-import Prelude.Compat
 
 -- | A top-level dAmn message.
 --

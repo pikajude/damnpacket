@@ -16,7 +16,6 @@ import Data.String
 import Data.Text.Encoding
 import Network.Damn.Format.Base
 import Network.Damn.Format.Damn.Internal
-import Prelude.Compat
 
 newtype Lines =
     Lines ByteString

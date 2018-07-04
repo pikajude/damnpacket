@@ -6,7 +6,6 @@ import Data.Attoparsec.ByteString (string)
 import qualified Data.Attoparsec.ByteString.Char8 as C
 import Data.ByteString (ByteString)
 import Language.Haskell.TH
-import Prelude.Compat
 
 ary :: Int -> String -> Name -> ExpQ
 ary n s con =
