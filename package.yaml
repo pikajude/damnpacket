@@ -1,0 +1,44 @@
+version: 1.3.1
+synopsis: Parsing dAmn messages
+description: >
+  This module provides a datatype and convenience functions for parsing, manipulating,
+  and rendering deviantART Message Network messages.
+license: MIT
+author: Jude Taylor
+maintainer: me@jude.xyz
+tested-with: GHC == 8.0.2, GHC == 8.2.2, GHC == 8.4.3
+category: Network
+extra-source-files: ChangeLog.md
+
+github: pikajude/damnpacket
+
+ghc-options: -Wall
+
+library:
+  source-dirs: src
+  exposed-modules:
+    - Network.Damn
+    - Network.Damn.Format.Damn
+    - Network.Damn.Format.IRC
+  dependencies:
+    - base == 4.*
+    - attoparsec
+    - bytestring
+    - fail
+    - html-entity
+    - semigroups
+    - template-haskell
+    - text
+    - th-lift-instances
+
+tests:
+  parse:
+    main: parse.hs
+    hs-source-dirs: tests
+    dependencies:
+      - base
+      - HUnit
+      - QuickCheck
+      - bytestring
+      - damnpacket
+      - hspec

@@ -1,46 +1,67 @@
-name:               damnpacket
-version:            1.3.1
-synopsis:           Parsing dAmn messages
-description:        This module provides a datatype and convenience functions for parsing,
-                    manipulating, and rendering deviantART Message Network messages.
-license:            MIT
-license-file:       LICENSE
-author:             Jude Taylor
-maintainer:         me@jude.xyz
-tested-with:        GHC == 8.0.2, GHC == 8.2.2, GHC == 8.4.3
-category:           Network
-build-type:         Simple
-extra-source-files: ChangeLog.md
-cabal-version:      >= 1.10
+-- This file has been generated from package.yaml by hpack version 0.28.2.
+--
+-- see: https://github.com/sol/hpack
+--
+-- hash: 7003c8a3a194f43e6b92208cd3b72eed22e1eb8c5a2aca409f845c7b1922980e
+
+name:           damnpacket
+version:        1.3.1
+synopsis:       Parsing dAmn messages
+description:    This module provides a datatype and convenience functions for parsing, manipulating, and rendering deviantART Message Network messages.
+category:       Network
+homepage:       https://github.com/pikajude/damnpacket#readme
+bug-reports:    https://github.com/pikajude/damnpacket/issues
+author:         Jude Taylor
+maintainer:     me@jude.xyz
+license:        MIT
+license-file:   LICENSE
+tested-with:    GHC == 8.0.2, GHC == 8.2.2, GHC == 8.4.3
+build-type:     Simple
+cabal-version:  >= 1.10
+extra-source-files:
+    ChangeLog.md
 
 source-repository head
-  type:     git
+  type: git
   location: https://github.com/pikajude/damnpacket
 
 library
-  exposed-modules:    Network.Damn
-                      Network.Damn.Format.Damn
-                      Network.Damn.Format.IRC
-  other-modules:      Network.Damn.Format.Base
-                      Network.Damn.Format.Damn.Internal
-                      Network.Damn.Tablumps
-                      Network.Damn.Tablumps.TH
-  hs-source-dirs:     src
-  build-depends:      base              == 4.*
-                    , attoparsec
-                    , bytestring
-                    , fail
-                    , html-entity
-                    , semigroups
-                    , template-haskell
-                    , text
-                    , th-lift-instances
-  default-language:   Haskell2010
-  ghc-options:        -Wall
+  exposed-modules:
+      Network.Damn
+      Network.Damn.Format.Damn
+      Network.Damn.Format.IRC
+  other-modules:
+      Network.Damn.Format.Base
+      Network.Damn.Format.Damn.Internal
+      Network.Damn.Tablumps
+      Network.Damn.Tablumps.TH
+      Paths_damnpacket
+  hs-source-dirs:
+      src
+  ghc-options: -Wall
+  build-depends:
+      attoparsec
+    , base ==4.*
+    , bytestring
+    , fail
+    , html-entity
+    , semigroups
+    , template-haskell
+    , text
+    , th-lift-instances
+  default-language: Haskell2010
 
 test-suite parse
-  type:             exitcode-stdio-1.0
-  main-is:          parse.hs
-  hs-source-dirs:   test
-  build-depends:    base, HUnit, QuickCheck, bytestring, damnpacket, hspec
+  type: exitcode-stdio-1.0
+  main-is: parse.hs
+  other-modules:
+      Paths_damnpacket
+  ghc-options: -Wall
+  build-depends:
+      HUnit
+    , QuickCheck
+    , base
+    , bytestring
+    , damnpacket
+    , hspec
   default-language: Haskell2010
